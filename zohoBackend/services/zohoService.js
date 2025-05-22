@@ -1,5 +1,5 @@
 const axios = require("axios");
-const { getAccessToken } = require("../zoho/auth");
+const { getAccessToken } = require("../zoho/auth1");
 require("dotenv").config();
 
 const API_BASE = "https://desk.zoho.com/api/v1";
@@ -132,7 +132,8 @@ exports.getOpenTickets = async (count = 10) => {
     subject: ticket.subject,
     status: ticket.status,
     email: ticket.email || ticket.contact?.email || "N/A",
-    webUrl: ticket.webUrl
+    webUrl: ticket.webUrl,
+    department: ticket.departmentId
   }));
 };
 
@@ -154,7 +155,7 @@ exports.getLastTwoMessages = async (ticketId) => {
       { headers }
     );
     threads = listRes.data?.data || [];
-    console.log(`🧵 ticket ${ticketId} • total threads:`, threads.length);
+    // console.log(`🧵 ticket ${ticketId} • total threads:`, threads.length);
   } catch (err) {
     console.warn(`⚠️  could not fetch thread list for ${ticketId}:`, err.message);
     return [];                                             // return empty, don’t throw
@@ -187,6 +188,45 @@ exports.getLastTwoMessages = async (ticketId) => {
     })
   );
 
-  return fullThreads.filter(Boolean);                      // remove nulls
+  return fullThreads.filter(Boolean).map(t => ({
+    content   : t.content || t.summary || "[no content]",
+    hasAttach : t.hasAttach || false      // ← new field
+  }));                     // remove nulls
 };
+
+
+
+exports.sendReplyAndClose = async (ticketId, replyText, customerEmail) => {
+  const token   = await getAccessToken();
+  const payload = {
+    ticketStatus     : "Closed",
+    channel          : "EMAIL",
+    contentType      : "plainText",
+    content          : replyText,
+    fromEmailAddress : process.env.FROM_EMAIL,
+    to               : customerEmail
+  };
+
+  const headers = {
+    Authorization : `Zoho-oauthtoken ${token}`,
+    orgId         : process.env.ORG_ID,
+    "Content-Type": "application/json"
+  };
+
+  console.log("📤 POST /tickets/%s/sendReply", ticketId);
+  console.log("🧾 Payload:", JSON.stringify(payload, null, 2));
+
+  try {
+    await axios.post(`${API_BASE}/tickets/${ticketId}/sendReply`, payload, { headers });
+    return true;
+  } catch (err) {
+    /* 💥  Log full Zoho error payload */
+    if (err.response) {
+      console.error("❌ Zoho 422 detail:", err.response.data);
+    }
+    throw err;   // bubble up so controller records "Error"
+  }
+};
+
+
 

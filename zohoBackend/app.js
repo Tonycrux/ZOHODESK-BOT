@@ -11,5 +11,5 @@ app.use("/api", ticketRoutes);
 app.get("/", (req, res) => res.send("Zoho Desk API Backend"));
 
 app.listen(port, () => {
-  console.log(`🚀 Server running on http://localhost:${port}`);
+  console.log(`Server running on http://localhost:${port}`);
 });
