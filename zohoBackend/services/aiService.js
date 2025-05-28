@@ -50,3 +50,41 @@ ${lastMessage}
 
   return { decision, sentiment, reply };
 };
+
+
+
+
+exports.classifyDepartment = async (subject, message) => {
+  const prompt = `
+You are a strict classifier. Choose exactly one of the departments / teams below
+or output "Unknown" if unsure. RETURN ONLY THE NAME.
+Departments / Teams (with duties):
+• Customer Service – general customer queries, subscription questions, password resets, downtime issues, relocation
+• Hotspot and Fibre – hotspot portal issues, fibre-install complaints, Anything relating to fiber
+• Social media – Twitter / Facebook / Instagram complaints, public mentions
+• bizdev – partnership proposals, B2B collaboration, vendor outreach
+• NOC Team – network outages, latency, routing, equipment down (Network Operations Center)
+• Account – billing discrepancies, invoices, refunds, payment failures, payments
+• Field Service – on-site repairs, antenna alignment, FSE dispatch
+• Retention Team – cancellation threats, churn prevention, downgrades
+• Sales Team – new service inquiries, quotes, plan upgrades
+• Quality Assurance – service quality audits, internal process feedback, QA reports
+
+Subject: ${subject}
+Description: ${message}
+
+Respond with the exact department/team name above, or "Unknown".
+If unsure, return "Unknown"
+`;
+  //console.log(prompt);
+  const result = await model.generateContent(prompt);
+  //console.log(result);
+  const text = (await result.response.text()).trim();
+  //console.log(text);
+  console.log("Classified department:", text);
+  try {
+    return text;
+  } catch {
+    return { department: "unknown" };
+  }
+};
