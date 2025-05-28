@@ -1,6 +1,0 @@
-{
-  "dependencies": {
-    "html-entities": "^2.6.0",
-    "p-limit": "^6.2.0"
-  }
-}
